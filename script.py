@@ -1,22 +1,13 @@
 import requests
 import json
 import re
-import os
 
 URL = "https://www.terminalx.com/w327090004?color=10"
-HEADERS = {
-    "User-Agent": "Mozilla/5.0"
-}
-
+HEADERS = {"User-Agent": "Mozilla/5.0"}
 TARGET_SIZES = {"43", "44", "45"}
-DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK")
 
 
 def extract_product_json(html):
-    """
-    TerminalX embeds product data in JSON inside the page.
-    This extracts the largest JSON block.
-    """
     matches = re.findall(r'\{.*\}', html, re.DOTALL)
     for m in matches:
         try:
@@ -65,23 +56,13 @@ def format_report(report):
     return "\n".join(lines)
 
 
-def notify(report_text):
-    if not DISCORD_WEBHOOK:
-        print("No webhook set")
-        return
-
-    payload = {
-        "content": f"🚨 **STOCK UPDATE (43–45)**\n{report_text}"
-    }
-    requests.post(DISCORD_WEBHOOK, json=payload)
-
-
 if __name__ == "__main__":
     found, report = check_stock()
     report_text = format_report(report)
 
+    # Print everything in logs
     print(report_text)
 
+    # Raise exception if stock found
     if found:
-        notify(report_text)
-        raise SystemExit("IN STOCK — notification sent")
+        raise SystemExit("🚨 ITEM IN STOCK — check logs above!")
