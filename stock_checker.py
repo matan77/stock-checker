@@ -5,6 +5,7 @@ import re
 URL = "https://www.terminalx.com/w327090004?color=10"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 TARGET_SIZES = {"43", "44", "45"}
+EXCLUDE_COLORS = {"ירוק"}  # Colors to exclude, e.g. {"ירוק", "שחור"}
 
 
 def extract_product_json(html):
@@ -12,12 +13,12 @@ def extract_product_json(html):
     variants_start = html.find('"variants":[')
     if variants_start == -1:
         return None
-    
+
     # Start from the [ after "variants":
     start = html.find('[', variants_start)
     if start == -1:
         return None
-    
+
     # Find the matching closing bracket by counting brackets
     bracket_count = 0
     end = start
@@ -29,7 +30,7 @@ def extract_product_json(html):
             if bracket_count == 0:
                 end = i + 1
                 break
-    
+
     try:
         variants = json.loads(html[start:end])
         return {"variants": variants}
@@ -53,15 +54,20 @@ def check_stock():
         attributes = variant.get("attributes", [])
         color = None
         size = None
-        
+
         for attr in attributes:
             if attr.get("code") == "color":
                 color = attr.get("label")
             elif attr.get("code") == "size":
                 size = str(attr.get("label"))
-        
+
+        # Skip if color is in exclusion list
+        if color in EXCLUDE_COLORS:
+            continue
+
         # Check stock status
-        available = variant.get("product", {}).get("stock_status2") == "IN_STOCK"
+        available = variant.get("product", {}).get(
+            "stock_status2") == "IN_STOCK"
 
         if color and size:
             if color not in report:
